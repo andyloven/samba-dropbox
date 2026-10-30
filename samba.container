@@ -1,0 +1,27 @@
+# Rootless Podman quadlet: ~/.config/containers/systemd/samba.container
+# Then: systemctl --user daemon-reload && systemctl --user start samba
+# (Run `loginctl enable-linger $USER` once so it starts at boot.)
+
+[Unit]
+Description=Tiny SMB3 dropbox
+
+[Container]
+Image=localhost/samba-dropbox:latest
+ContainerName=samba
+# Container uid/gid 1000 (smb) = your host user, so dropped files are yours.
+UserNS=keep-id:uid=1000,gid=1000
+User=0:0
+Volume=%h/dropbox:/share:Z
+# Optional: use your own config instead of the baked-in one.
+#Volume=%h/.config/samba-dropbox/smb.conf:/etc/samba/smb.conf:ro,Z
+
+# Rootless can't bind ports below 1024 by default, so this uses 4445
+# Clients mount with: -o port=4445
+# For the real 445, set net.ipv4.ip_unprivileged_port_start=445 and use 445:445.
+PublishPort=4445:445
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
